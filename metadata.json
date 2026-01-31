@@ -1,0 +1,7 @@
+{
+  "name": "Blair Portfolio",
+  "description": "A high-end photography portfolio for Blair featuring a responsive masonry gallery, an AI-powered artistic statement generator, and deep integration with Google Search for location-based shooting advice.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
