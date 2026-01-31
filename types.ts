@@ -1,3 +1,4 @@
+
 export interface Photo {
   id: string;
   url: string;
@@ -5,12 +6,23 @@ export interface Photo {
   category: string;
   price?: number;
   description?: string;
+  inquiryNote?: string;
   settings?: {
     shutter: string;
     aperture: string;
     iso: string;
     lens: string;
   };
+}
+
+export interface Inquiry {
+  id: string;
+  name: string;
+  email: string;
+  type: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
 }
 
 export enum Category {

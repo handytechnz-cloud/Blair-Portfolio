@@ -1,8 +1,51 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Icons } from '../constants';
+import { Inquiry } from '../types';
 
-const Contact: React.FC = () => {
+interface ContactProps {
+  prefilledMessage?: string;
+  onClearPrefill?: () => void;
+  onSendInquiry: (inquiry: Inquiry) => void;
+}
+
+const Contact: React.FC<ContactProps> = ({ prefilledMessage, onClearPrefill, onSendInquiry }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    type: 'Commercial Project',
+    message: ''
+  });
+  const [isSent, setIsSent] = useState(false);
+
+  useEffect(() => {
+    if (prefilledMessage) {
+      setFormData(prev => ({ ...prev, message: prefilledMessage }));
+      if (onClearPrefill) onClearPrefill();
+    }
+  }, [prefilledMessage, onClearPrefill]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.message) {
+      alert("Please fill in all fields.");
+      return;
+    }
+
+    const newInquiry: Inquiry = {
+      id: Date.now().toString(),
+      ...formData,
+      timestamp: Date.now(),
+      read: false
+    };
+
+    onSendInquiry(newInquiry);
+    setIsSent(true);
+    setFormData({ name: '', email: '', type: 'Commercial Project', message: '' });
+    
+    setTimeout(() => setIsSent(false), 5000);
+  };
+
   return (
     <div className="py-24 px-6 max-w-7xl mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
@@ -32,51 +75,74 @@ const Contact: React.FC = () => {
           </div>
         </div>
 
-        <form className="space-y-6 bg-white p-10 rounded-[3rem] shadow-xl shadow-sky-900/5 border border-slate-200" onSubmit={(e) => e.preventDefault()}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Name</label>
-              <input 
-                type="text" 
-                className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors text-slate-900 font-bold"
-                placeholder="John Doe"
-              />
+        <div className="relative">
+          {isSent && (
+            <div className="absolute inset-0 z-10 bg-white/90 backdrop-blur-md flex flex-col items-center justify-center text-center p-10 rounded-[3rem] animate-fade-in">
+              <div className="bg-cyan-500 text-white p-6 rounded-full mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter mb-4">Message Delivered</h3>
+              <p className="text-slate-500 font-medium">Thank you for reaching out. Blair will review your vision and get back to you shortly.</p>
+              <button onClick={() => setIsSent(false)} className="mt-8 text-cyan-600 font-black uppercase tracking-widest text-xs underline">Send another message</button>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Email</label>
-              <input 
-                type="email" 
-                className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors text-slate-900 font-bold"
-                placeholder="john@example.com"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Inquiry Type</label>
-            <div className="relative">
-              <select className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors appearance-none text-slate-900 font-bold">
-                <option>Commercial Project</option>
-                <option>Personal Portrait</option>
-                <option>Event Coverage</option>
-                <option>Print Acquisition</option>
-              </select>
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          )}
+
+          <form className="space-y-6 bg-white p-10 rounded-[3rem] shadow-xl shadow-sky-900/5 border border-slate-200" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Name</label>
+                <input 
+                  type="text" 
+                  className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors text-slate-900 font-bold"
+                  placeholder="John Doe"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Email</label>
+                <input 
+                  type="email" 
+                  className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors text-slate-900 font-bold"
+                  placeholder="john@example.com"
+                  value={formData.email}
+                  onChange={e => setFormData({...formData, email: e.target.value})}
+                />
               </div>
             </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Message</label>
-            <textarea 
-              rows={5}
-              className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors resize-none text-slate-900 font-medium"
-              placeholder="Tell me about your vision..."
-            />
-          </div>
-          <button className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl hover:bg-cyan-600 transition-all uppercase tracking-[0.2em] shadow-xl">
-            Send Inquiry
-          </button>
-        </form>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Inquiry Type</label>
+              <div className="relative">
+                <select 
+                  className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors appearance-none text-slate-900 font-bold"
+                  value={formData.type}
+                  onChange={e => setFormData({...formData, type: e.target.value})}
+                >
+                  <option>Commercial Project</option>
+                  <option>Personal Portrait</option>
+                  <option>Event Coverage</option>
+                  <option>Print Acquisition</option>
+                </select>
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Message</label>
+              <textarea 
+                rows={5}
+                className="w-full bg-sky-50 border border-slate-100 rounded-2xl px-6 py-4 focus:outline-none focus:border-cyan-500 transition-colors resize-none text-slate-900 font-medium"
+                placeholder="Tell me about your vision..."
+                value={formData.message}
+                onChange={e => setFormData({...formData, message: e.target.value})}
+              />
+            </div>
+            <button type="submit" className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl hover:bg-cyan-600 transition-all uppercase tracking-[0.2em] shadow-xl">
+              Send Inquiry
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );

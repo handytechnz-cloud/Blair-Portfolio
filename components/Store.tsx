@@ -4,9 +4,10 @@ import { Photo } from '../types';
 
 interface StoreProps {
   photos: Photo[];
+  onInquire: (photo: Photo) => void;
 }
 
-const Store: React.FC<StoreProps> = ({ photos }) => {
+const Store: React.FC<StoreProps> = ({ photos, onInquire }) => {
   return (
     <div className="py-24 px-6 max-w-7xl mx-auto">
       <div className="mb-16">
@@ -39,7 +40,10 @@ const Store: React.FC<StoreProps> = ({ photos }) => {
                 </div>
                 <p className="text-2xl font-black text-cyan-600 font-mono">${photo.price?.toFixed(2)}</p>
               </div>
-              <button className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-cyan-600 transition-all uppercase text-xs tracking-[0.2em] shadow-xl">
+              <button 
+                onClick={() => onInquire(photo)}
+                className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl hover:bg-cyan-600 transition-all uppercase text-xs tracking-[0.2em] shadow-xl"
+              >
                 Buy Limited Print
               </button>
             </div>

@@ -9,9 +9,10 @@ interface GalleryProps {
   onDeletePhoto: (id: string) => void;
   onClearAll: () => void;
   userRole: UserRole;
+  onInquire: (photo: Photo) => void;
 }
 
-const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, onClearAll, userRole }) => {
+const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, onClearAll, userRole, onInquire }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -24,6 +25,7 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
     title: '',
     category: Category.GENERAL,
     description: '',
+    inquiryNote: '',
     url: '',
     price: '',
     shutter: '',
@@ -68,6 +70,7 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
       category: newPhotoData.category,
       price: parseFloat(newPhotoData.price) || 0,
       description: newPhotoData.description,
+      inquiryNote: newPhotoData.inquiryNote,
       settings: {
         shutter: newPhotoData.shutter,
         aperture: newPhotoData.aperture,
@@ -82,6 +85,7 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
       title: '',
       category: Category.GENERAL,
       description: '',
+      inquiryNote: '',
       url: '',
       price: '',
       shutter: '',
@@ -216,6 +220,13 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
               <h3 className="text-5xl font-black leading-none text-slate-900 uppercase tracking-tighter">{selectedPhoto.title}</h3>
               <p className="text-slate-600 leading-relaxed font-medium text-lg">{selectedPhoto.description}</p>
               
+              {selectedPhoto.inquiryNote && (
+                <div className="bg-cyan-50 border border-cyan-100 p-6 rounded-2xl">
+                  <p className="text-[10px] uppercase text-cyan-600 mb-2 font-black tracking-widest">Inquiry Details</p>
+                  <p className="text-sm font-medium text-slate-700 italic">{selectedPhoto.inquiryNote}</p>
+                </div>
+              )}
+
               {selectedPhoto.settings && (
                 <div className="grid grid-cols-2 gap-6 border-t border-slate-200 pt-8">
                   <div>
@@ -236,7 +247,10 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
                   </div>
                 </div>
               )}
-              <button className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-cyan-600 transition-all uppercase tracking-widest text-xs">
+              <button 
+                onClick={() => { onInquire(selectedPhoto); setSelectedPhoto(null); }}
+                className="w-full bg-slate-900 text-white font-black py-4 rounded-2xl shadow-xl hover:bg-cyan-600 transition-all uppercase tracking-widest text-xs"
+              >
                 Inquire about this piece
               </button>
             </div>
@@ -246,16 +260,16 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
 
       {showAddModal && (
         <div className="fixed inset-0 z-[300] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-[3rem] w-full max-w-2xl p-10 relative shadow-2xl">
+          <div className="bg-white border border-slate-200 rounded-[3rem] w-full max-w-2xl p-10 relative shadow-2xl my-auto">
             <button onClick={() => setShowAddModal(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900">
               <Icons.Close />
             </button>
             <h3 className="text-3xl font-black mb-8 text-slate-900 uppercase tracking-tighter">Upload New Work</h3>
             {uploadError && <p className="mb-6 text-red-500 text-xs font-black uppercase tracking-widest">{uploadError}</p>}
             
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="flex flex-col md:flex-row gap-8">
-                <div className="flex-1 space-y-6">
+                <div className="flex-1 space-y-4">
                   <div className="aspect-square border-2 border-dashed border-slate-200 rounded-3xl flex items-center justify-center overflow-hidden bg-sky-50 relative">
                     {newPhotoData.url ? (
                       <img src={newPhotoData.url} className="w-full h-full object-cover" alt="Preview" />
@@ -275,7 +289,7 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
                     onChange={e => setNewPhotoData({...newPhotoData, price: e.target.value})}
                   />
                 </div>
-                <div className="flex-[1.5] space-y-6">
+                <div className="flex-[1.5] space-y-4">
                   <input 
                     required 
                     placeholder="Photo Title" 
@@ -285,10 +299,17 @@ const Gallery: React.FC<GalleryProps> = ({ photos, onAddPhoto, onDeletePhoto, on
                   />
                   <textarea 
                     placeholder="Story or Description" 
-                    rows={4}
+                    rows={3}
                     className="w-full bg-sky-50 border border-slate-200 rounded-2xl px-6 py-4 text-slate-900 font-medium focus:border-cyan-500 outline-none resize-none"
                     value={newPhotoData.description}
                     onChange={e => setNewPhotoData({...newPhotoData, description: e.target.value})}
+                  />
+                  <textarea 
+                    placeholder="Inquire Details (What people see when they click 'Inquire')" 
+                    rows={2}
+                    className="w-full bg-sky-50 border border-slate-200 rounded-2xl px-6 py-4 text-slate-900 font-medium border-cyan-100 focus:border-cyan-500 outline-none resize-none"
+                    value={newPhotoData.inquiryNote}
+                    onChange={e => setNewPhotoData({...newPhotoData, inquiryNote: e.target.value})}
                   />
                 </div>
               </div>

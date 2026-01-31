@@ -4,12 +4,13 @@ import { AISuggestion } from "../types";
 
 // Safe initialization
 const getAIClient = () => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey) {
+  // Check for API key existence before creating the client
+  if (!process.env.API_KEY) {
     console.warn("API Key missing. Gemini features will be disabled.");
     return null;
   }
-  return new GoogleGenAI({ apiKey });
+  // Use process.env.API_KEY directly in the named parameter as per guidelines.
+  return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
 
 export const getArtisticStatement = async (imageData: string): Promise<AISuggestion | null> => {
@@ -17,8 +18,9 @@ export const getArtisticStatement = async (imageData: string): Promise<AISuggest
     const ai = getAIClient();
     if (!ai) return null;
 
+    // Upgraded to gemini-3-pro-preview for complex creative analysis and high-quality artistic storytelling.
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview",
       contents: {
         parts: [
           { inlineData: { data: imageData.split(',')[1], mimeType: "image/jpeg" } },
@@ -42,6 +44,7 @@ export const getArtisticStatement = async (imageData: string): Promise<AISuggest
       }
     });
 
+    // Directly access the .text property from the response.
     if (response.text) {
       return JSON.parse(response.text.trim()) as AISuggestion;
     }
@@ -57,14 +60,16 @@ export const getShootingAdvice = async (location: string): Promise<{ text: strin
     const ai = getAIClient();
     if (!ai) return { text: "AI features are currently unavailable. Check your API configuration.", sources: [] };
 
+    // Upgraded to gemini-3-pro-preview for advanced reasoning when scouting locations with Google Search grounding.
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3-pro-preview",
       contents: `Provide expert photography advice for shooting in ${location}. Include best times of day, potential gear needs, and hidden spots if possible. Use Google Search.`,
       config: {
         tools: [{ googleSearch: {} }]
       }
     });
 
+    // Directly access .text property and extract grounding chunks for citations.
     return {
       text: response.text || "I couldn't find specific advice for this location at the moment.",
       sources: response.candidates?.[0]?.groundingMetadata?.groundingChunks || []

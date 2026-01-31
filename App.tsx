@@ -10,14 +10,17 @@ import QA from './components/QA';
 import Admin from './components/Admin';
 import AIStudio from './components/AIStudio';
 import { Icons, SAMPLE_PHOTOS } from './constants';
-import { Photo, UserRole, AccessKey, UserSession, AboutContent } from './types';
+import { Photo, UserRole, AccessKey, UserSession, AboutContent, Inquiry } from './types';
 import { 
   loadPhotosFromDB, 
   savePhotosToDB, 
   loadAccessKeys, 
   saveAccessKeys,
   loadAboutContent,
-  saveAboutContent
+  saveAboutContent,
+  loadInquiries,
+  saveInquiry,
+  deleteInquiry
 } from './services/storageService';
 
 type View = 'hero' | 'gallery' | 'about' | 'contact' | 'store' | 'qa' | 'admin' | 'studio';
@@ -43,6 +46,7 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('hero');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [accessKeys, setAccessKeys] = useState<AccessKey[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [aboutContent, setAboutContent] = useState<AboutContent>(DEFAULT_ABOUT);
   const [isLoaded, setIsLoaded] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -53,13 +57,16 @@ const App: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginInput, setLoginInput] = useState('');
 
+  const [inquirySubject, setInquirySubject] = useState<string | null>(null);
+
   useEffect(() => {
     const init = async () => {
       try {
-        const [savedPhotos, savedKeys, savedAbout] = await Promise.all([
+        const [savedPhotos, savedKeys, savedAbout, savedInquiries] = await Promise.all([
           loadPhotosFromDB(),
           loadAccessKeys(),
-          loadAboutContent()
+          loadAboutContent(),
+          loadInquiries()
         ]);
         
         if (savedPhotos && savedPhotos.length > 0) {
@@ -69,6 +76,7 @@ const App: React.FC = () => {
         }
         
         setAccessKeys(savedKeys || []);
+        setInquiries(savedInquiries || []);
         if (savedAbout) setAboutContent(savedAbout);
 
         const session = sessionStorage.getItem('blair_session');
@@ -103,23 +111,48 @@ const App: React.FC = () => {
 
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!loginInput.trim()) return;
+
     if (loginInput === MASTER_KEY) {
       const session: UserSession = { role: 'ADMIN', label: 'Owner' };
       setUserRole('ADMIN');
       setUserName('Owner');
       sessionStorage.setItem('blair_session', JSON.stringify(session));
-      setShowLoginModal(false);
-      setLoginInput('');
       setSuccess("Authenticated as Owner");
     } else {
-      alert("Invalid Access Key");
+      const session: UserSession = { role: 'GUEST', label: loginInput };
+      setUserRole('GUEST');
+      setUserName(loginInput);
+      sessionStorage.setItem('blair_session', JSON.stringify(session));
+      setSuccess(`Welcome, ${loginInput}`);
     }
+
+    setShowLoginModal(false);
+    setLoginInput('');
   };
 
   const handleUpdateAbout = async (newContent: AboutContent) => {
     setAboutContent(newContent);
     await saveAboutContent(newContent).catch(console.error);
     setSuccess("Portfolio updated successfully.");
+  };
+
+  const handleSendInquiry = async (inquiry: Inquiry) => {
+    await saveInquiry(inquiry);
+    const updated = await loadInquiries();
+    setInquiries(updated);
+  };
+
+  const handleDeleteInquiry = async (id: string) => {
+    await deleteInquiry(id);
+    const updated = await loadInquiries();
+    setInquiries(updated);
+    setSuccess("Inquiry archived.");
+  };
+
+  const handleInquiry = (photo: Photo) => {
+    setInquirySubject(`Inquiry for piece: "${photo.title}"`);
+    setView('contact');
   };
 
   const renderContent = () => {
@@ -140,20 +173,20 @@ const App: React.FC = () => {
 
     switch (view) {
       case 'hero': return <Hero onStart={() => setView('gallery')} />;
-      case 'gallery': return <Gallery photos={photos} onAddPhoto={(p) => setPhotos([p, ...photos])} onDeletePhoto={(id) => setPhotos(photos.filter(p => p.id !== id))} onClearAll={() => setPhotos([])} userRole={userRole} />;
+      case 'gallery': return <Gallery photos={photos} onAddPhoto={(p) => setPhotos([p, ...photos])} onDeletePhoto={(id) => setPhotos(photos.filter(p => p.id !== id))} onClearAll={() => setPhotos([])} userRole={userRole} onInquire={handleInquiry} />;
       case 'about': return <About content={aboutContent} onUpdate={handleUpdateAbout} userRole={userRole} />;
-      case 'contact': return <Contact />;
-      case 'store': return <Store photos={photos.filter(p => p.price && p.price > 0)} />;
+      case 'contact': return <Contact prefilledMessage={inquirySubject || undefined} onClearPrefill={() => setInquirySubject(null)} onSendInquiry={handleSendInquiry} />;
+      case 'store': return <Store photos={photos.filter(p => p.price && p.price > 0)} onInquire={handleInquiry} />;
       case 'qa': return <QA />;
       case 'studio': return <AIStudio />;
-      case 'admin': return <Admin accessKeys={accessKeys} onAddKey={(l, r) => setAccessKeys([...accessKeys, { id: Date.now().toString(), label: l, role: r, key: Math.random().toString(36).slice(-6).toUpperCase(), createdAt: Date.now() }])} onRemoveKey={(id) => setAccessKeys(accessKeys.filter(k => k.id !== id))} />;
-      default: return <Gallery photos={photos} onAddPhoto={()=>{}} onDeletePhoto={()=>{}} onClearAll={()=>{}} userRole={userRole} />;
+      case 'admin': return <Admin inquiries={inquiries} onDeleteInquiry={handleDeleteInquiry} accessKeys={accessKeys} onAddKey={(l, r) => setAccessKeys([...accessKeys, { id: Date.now().toString(), label: l, role: r, key: Math.random().toString(36).slice(-6).toUpperCase(), createdAt: Date.now() }])} onRemoveKey={(id) => setAccessKeys(accessKeys.filter(k => k.id !== id))} />;
+      default: return <Gallery photos={photos} onAddPhoto={()=>{}} onDeletePhoto={()=>{}} onClearAll={()=>{}} userRole={userRole} onInquire={handleInquiry} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-sky-50 text-slate-900 transition-colors duration-500">
-      {view !== 'hero' && <Navbar onNavClick={setView as any} activeView={view} userRole={userRole} userName={userName} onSignOut={() => {setUserRole('GUEST'); sessionStorage.removeItem('blair_session'); setSuccess("Signed Out");}} onSignInClick={() => setShowLoginModal(true)} />}
+      {view !== 'hero' && <Navbar onNavClick={setView as any} activeView={view} userRole={userRole} userName={userName} onSignOut={() => {setUserRole('GUEST'); setUserName(''); sessionStorage.removeItem('blair_session'); setSuccess("Signed Out");}} onSignInClick={() => setShowLoginModal(true)} />}
       
       {success && <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500] bg-cyan-600 text-white px-8 py-3 rounded-full font-black text-xs tracking-[0.2em] shadow-2xl animate-bounce">{success}</div>}
 
@@ -161,10 +194,20 @@ const App: React.FC = () => {
         <div className="fixed inset-0 z-[600] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-6">
           <div className="bg-white border border-slate-200 rounded-[2.5rem] w-full max-w-md p-10 relative text-center shadow-2xl">
             <button onClick={() => setShowLoginModal(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900"><Icons.Close /></button>
-            <h2 className="text-3xl font-black uppercase tracking-tighter mb-8 text-slate-900">Studio Access</h2>
+            <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-slate-900">Studio Entry</h2>
+            <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mb-8">Enter your name or staff access key</p>
             <form onSubmit={handleSignIn} className="space-y-6">
-              <input type="password" placeholder="ENTER ACCESS KEY" className="w-full bg-sky-50 border border-slate-200 rounded-2xl px-6 py-5 text-center text-xl font-mono focus:border-cyan-500 outline-none text-slate-900" value={loginInput} onChange={e => setLoginInput(e.target.value)} />
-              <button className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl hover:bg-cyan-600 transition-all uppercase tracking-widest">Unlock Profile</button>
+              <input 
+                type="text" 
+                placeholder="NAME OR ACCESS KEY" 
+                className="w-full bg-sky-50 border border-slate-200 rounded-2xl px-6 py-5 text-center text-xl font-mono focus:border-cyan-500 outline-none text-slate-900 placeholder:text-slate-300 placeholder:font-sans" 
+                value={loginInput} 
+                onChange={e => setLoginInput(e.target.value)} 
+                autoFocus
+              />
+              <button className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl hover:bg-cyan-600 transition-all uppercase tracking-widest">
+                Enter Studio
+              </button>
             </form>
           </div>
         </div>

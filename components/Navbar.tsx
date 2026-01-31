@@ -42,7 +42,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, activeView, userRole, userN
           <span className="text-xl font-black tracking-tighter uppercase text-slate-900">BLAIR</span>
         </div>
         
-        {/* Desktop Links (Hidden on small and medium screens) */}
+        {/* Desktop Links */}
         <div className="hidden lg:flex gap-8 items-center text-sm font-medium tracking-wide">
           {navLinks.map(link => (
             <button 
@@ -65,10 +65,12 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, activeView, userRole, userN
 
           <div className="h-4 w-px bg-slate-200 mx-2" />
 
-          {userRole !== 'GUEST' ? (
+          {userName ? (
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-end">
-                <span className="text-[10px] text-slate-400 uppercase tracking-widest leading-none mb-1 font-bold">Session</span>
+                <span className="text-[10px] text-slate-400 uppercase tracking-widest leading-none mb-1 font-bold">
+                  {userRole === 'ADMIN' ? 'Owner' : 'Guest'}
+                </span>
                 <span className="text-xs text-cyan-600 font-black">{userName}</span>
               </div>
               <button 
@@ -83,12 +85,12 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, activeView, userRole, userN
               onClick={onSignInClick}
               className="border border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white px-4 py-1.5 rounded-full text-xs uppercase font-black tracking-widest transition-all"
             >
-              Owner Login
+              Login
             </button>
           )}
         </div>
 
-        {/* Mobile Toggle Button (Visible when window is not full screen / small) */}
+        {/* Mobile Toggle Button */}
         <button 
           className="lg:hidden text-slate-900 z-[150] p-3 hover:bg-slate-100 rounded-full transition-all active:scale-90"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -138,10 +140,12 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, activeView, userRole, userN
           <div className="w-32 h-1 bg-cyan-600/20 rounded-full" />
 
           <div className="flex flex-col items-center gap-6 pt-4 w-full max-w-xs">
-            {userRole !== 'GUEST' ? (
+            {userName ? (
               <>
                 <div className="text-center">
-                   <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">Authenticated as</p>
+                   <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-2 font-bold">
+                    {userRole === 'ADMIN' ? 'Authenticated as Owner' : 'Logged in as Guest'}
+                   </p>
                    <p className="text-2xl text-cyan-600 font-black uppercase">{userName}</p>
                 </div>
                 <button 
@@ -156,7 +160,7 @@ const Navbar: React.FC<NavbarProps> = ({ onNavClick, activeView, userRole, userN
                 onClick={() => { onSignInClick(); setIsMobileMenuOpen(false); }}
                 className="w-full bg-slate-900 text-white px-12 py-6 rounded-full text-sm uppercase font-black tracking-[0.2em] shadow-2xl active:scale-95 transition-all"
               >
-                Owner Login
+                Login
               </button>
             )}
           </div>

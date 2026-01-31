@@ -1,10 +1,12 @@
-import { Photo, AccessKey, AboutContent } from "../types";
+
+import { Photo, AccessKey, AboutContent, Inquiry } from "../types";
 
 const DB_NAME = "BlairPortfolioDB";
 const STORE_NAME = "photos";
 const KEY_STORE = "access_keys";
 const ABOUT_STORE = "about_content";
-const DB_VERSION = 3;
+const INQUIRY_STORE = "inquiries";
+const DB_VERSION = 4; // Bumped version for new store
 
 export const initDB = (): Promise<IDBDatabase> => {
   return new Promise((resolve, reject) => {
@@ -15,6 +17,7 @@ export const initDB = (): Promise<IDBDatabase> => {
       if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
       if (!db.objectStoreNames.contains(KEY_STORE)) db.createObjectStore(KEY_STORE);
       if (!db.objectStoreNames.contains(ABOUT_STORE)) db.createObjectStore(ABOUT_STORE);
+      if (!db.objectStoreNames.contains(INQUIRY_STORE)) db.createObjectStore(INQUIRY_STORE);
     };
     request.onsuccess = (event) => resolve((event.target as IDBOpenDBRequest).result);
   });
@@ -77,4 +80,28 @@ export const loadAccessKeys = async (): Promise<AccessKey[]> => {
     const request = transaction.objectStore(KEY_STORE).get("keys_list");
     request.onsuccess = () => resolve(request.result || []);
   });
+};
+
+export const saveInquiry = async (inquiry: Inquiry): Promise<void> => {
+  const db = await initDB();
+  const inquiries = await loadInquiries();
+  const transaction = db.transaction([INQUIRY_STORE], "readwrite");
+  transaction.objectStore(INQUIRY_STORE).put([inquiry, ...inquiries], "inquiry_list");
+};
+
+export const loadInquiries = async (): Promise<Inquiry[]> => {
+  const db = await initDB();
+  return new Promise((resolve) => {
+    const transaction = db.transaction([INQUIRY_STORE], "readonly");
+    const request = transaction.objectStore(INQUIRY_STORE).get("inquiry_list");
+    request.onsuccess = () => resolve(request.result || []);
+  });
+};
+
+export const deleteInquiry = async (id: string): Promise<void> => {
+  const db = await initDB();
+  const inquiries = await loadInquiries();
+  const filtered = inquiries.filter(i => i.id !== id);
+  const transaction = db.transaction([INQUIRY_STORE], "readwrite");
+  transaction.objectStore(INQUIRY_STORE).put(filtered, "inquiry_list");
 };
