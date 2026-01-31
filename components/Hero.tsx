@@ -18,13 +18,13 @@ const Hero: React.FC<HeroProps> = ({ onStart }) => {
       </div>
       
       <div className="relative z-10 text-center px-6 max-w-4xl">
-        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 leading-none animate-fade-in-up text-slate-900 drop-shadow-sm">
+        <h1 className="text-6xl md:text-8xl font-black tracking-tighter mb-6 leading-none animate-fade-in-up drop-shadow-sm text-slate-900">
           BLAIR <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-600 to-slate-900">
+          <span className="text-white drop-shadow-lg">
             PHOTOGRAPHY
           </span>
         </h1>
-        <p className="text-lg md:text-xl text-slate-700 mb-10 max-w-2xl mx-auto leading-relaxed opacity-0 animate-fade-in font-medium" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
+        <p className="text-lg md:text-xl text-slate-900 mb-10 max-w-2xl mx-auto leading-relaxed opacity-0 animate-fade-in font-medium" style={{ animationDelay: '0.4s', animationFillMode: 'forwards' }}>
           Welcome to the digital atelier of Blair. Where high-end commercial photography meets soulful visual storytelling.
         </p>
         <button 
