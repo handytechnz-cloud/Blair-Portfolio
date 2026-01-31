@@ -1,11 +1,11 @@
 
 import React, { useState } from 'react';
 import { Icons } from '../constants';
-import { UserRole } from '../types';
+import { UserRole, AppView } from '../types';
 import { ThemeType } from '../App';
 
 interface NavbarProps {
-  onNavClick: (view: 'gallery' | 'about' | 'contact' | 'store' | 'qa' | 'admin') => void;
+  onNavClick: (view: AppView) => void;
   activeView: string;
   userRole: UserRole;
   userName: string;
@@ -24,12 +24,12 @@ const Navbar: React.FC<NavbarProps> = ({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showThemeMenu, setShowThemeMenu] = useState(false);
 
-  const handleNavClick = (view: 'gallery' | 'about' | 'contact' | 'store' | 'qa' | 'admin') => {
+  const handleNavClick = (view: AppView) => {
     onNavClick(view);
     setIsMobileMenuOpen(false);
   };
 
-  const navLinks = [
+  const navLinks: { id: AppView; label: string; isSpecial?: boolean }[] = [
     { id: 'gallery', label: 'Gallery' },
     { id: 'store', label: 'Prints', isSpecial: true },
     { id: 'qa', label: 'Q&A' },
@@ -39,7 +39,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
   const themeOptions: {id: ThemeType, color: string, label: string, isSelectable?: boolean, adminOnly?: boolean}[] = [
     { id: 'black', color: 'bg-black border-white/20', label: 'Obsidian' },
-    { id: 'white', color: 'bg-slate-100 border-slate-200', label: 'Off-White' },
+    { id: 'white', color: 'bg-[#fffdfa] border-amber-100', label: 'Off-White' },
     { id: 'rainbow', color: 'bg-gradient-to-r from-red-500 via-green-500 to-blue-500', label: 'Rainbow', adminOnly: true },
     { id: 'gold', color: 'bg-gradient-to-tr from-amber-200 via-yellow-500 to-amber-700', label: 'Shiny Gold', adminOnly: true },
     { id: 'red', color: 'bg-red-300', label: 'Red', isSelectable: true },
@@ -51,13 +51,12 @@ const Navbar: React.FC<NavbarProps> = ({
   ];
 
   const currentThemeLabel = themeOptions.find(t => t.id === currentTheme)?.label || 'Theme';
-
   const isDarkTheme = currentTheme === 'black' || currentTheme === 'rainbow' || currentTheme === 'gold';
-  const navTextColor = isDarkTheme ? 'text-white' : 'text-slate-900';
+  const navTextColor = isDarkTheme ? 'text-white' : 'text-slate-800';
   const navSubColor = isDarkTheme ? 'text-slate-400' : 'text-slate-500';
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-[100] ${isDarkTheme ? 'bg-black/90' : 'bg-white/80'} backdrop-blur-lg border-b ${isDarkTheme ? 'border-white/10' : 'border-slate-200'} px-6 py-4 transition-colors`}>
+    <nav className={`fixed top-0 left-0 right-0 z-[100] ${isDarkTheme ? 'bg-black/90' : 'bg-[#fffdfa]/80'} backdrop-blur-lg border-b ${isDarkTheme ? 'border-white/10' : 'border-amber-100'} px-6 py-4 transition-colors`}>
       <div className="max-w-7xl mx-auto flex justify-between items-center relative">
         <div 
           className="flex items-center gap-2 cursor-pointer group z-[150]"
@@ -73,7 +72,7 @@ const Navbar: React.FC<NavbarProps> = ({
           {navLinks.map(link => (
             <button 
               key={link.id}
-              onClick={() => handleNavClick(link.id as any)}
+              onClick={() => handleNavClick(link.id)}
               className={`${activeView === link.id ? (link.isSpecial ? 'text-cyan-600' : navTextColor) : navSubColor + ' hover:' + navTextColor} transition-colors uppercase font-bold`}
             >
               {link.label}
@@ -96,21 +95,18 @@ const Navbar: React.FC<NavbarProps> = ({
               onClick={() => setShowThemeMenu(!showThemeMenu)}
               className={`flex items-center gap-2 text-[10px] uppercase font-black tracking-widest ${navSubColor} hover:${navTextColor} transition-colors`}
             >
-              {currentTheme === 'blend' ? 'Customizing Blend' : currentThemeLabel}
+              {currentTheme === 'blend' ? 'Blend' : currentThemeLabel}
               <div className={`w-3 h-3 rounded-full border border-slate-200 shadow-sm ${themeOptions.find(t => t.id === currentTheme)?.color}`} />
             </button>
             
             {showThemeMenu && (
-              <div className="absolute top-full mt-4 right-0 bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl flex flex-col gap-3 min-w-[200px] animate-fade-in z-[200]">
+              <div className="absolute top-full mt-4 right-0 bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl flex flex-col gap-3 min-w-[220px] animate-fade-in z-[200]">
                 <p className="text-[8px] font-black uppercase tracking-[0.3em] text-slate-400 border-b border-slate-100 pb-3 mb-2">
                   {isGlobalEventActive ? 'Atmosphere Event' : 'Choose Atmosphere'}
                 </p>
                 {themeOptions.map(theme => {
                   const isUserAdmin = userRole === 'ADMIN';
-                  
-                  // Logic: During global event, normally we'd restrict, but user wants to be able to pick white.
                   if (isGlobalEventActive && !isUserAdmin) {
-                    // Allow White override or currently active theme
                     if (theme.id !== 'white' && theme.id !== currentTheme) return null;
                   } else {
                     if (theme.adminOnly && !isUserAdmin) return null;
@@ -124,8 +120,7 @@ const Navbar: React.FC<NavbarProps> = ({
                       >
                         <div className={`w-3 h-3 rounded-full border border-slate-200 ${theme.color}`} />
                         {theme.label}
-                        {theme.id === 'white' && isGlobalEventActive && <span className="ml-auto text-[8px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">OVERRIDE</span>}
-                        {theme.adminOnly && <span className="ml-auto text-[8px] bg-cyan-100 text-cyan-600 px-1.5 py-0.5 rounded">ADMIN</span>}
+                        {theme.id === 'white' && isGlobalEventActive && <span className="ml-auto text-[8px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">RESTORE</span>}
                       </button>
                       
                       {currentTheme === 'blend' && theme.isSelectable && (
@@ -163,7 +158,7 @@ const Navbar: React.FC<NavbarProps> = ({
           ) : (
             <button 
               onClick={onSignInClick} 
-              className={`border-2 ${isDarkTheme ? 'border-white text-white hover:bg-white hover:text-black' : 'border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'} px-6 py-1.5 rounded-full text-xs uppercase font-black tracking-widest transition-all`}
+              className={`border-2 ${isDarkTheme ? 'border-white text-white hover:bg-white hover:text-black' : 'border-slate-800 text-slate-800 hover:bg-slate-800 hover:text-white'} px-6 py-1.5 rounded-full text-xs uppercase font-black tracking-widest transition-all`}
             >
               Login
             </button>
@@ -178,11 +173,11 @@ const Navbar: React.FC<NavbarProps> = ({
         </button>
       </div>
 
-      <div className={`fixed inset-0 bg-white/95 backdrop-blur-3xl z-[140] transition-all duration-500 ease-in-out lg:hidden ${isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
+      <div className={`fixed inset-0 bg-[#fffdfa]/95 backdrop-blur-3xl z-[140] transition-all duration-500 ease-in-out lg:hidden ${isMobileMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'}`}>
         <div className="flex flex-col h-full items-center justify-center p-12 space-y-10">
           <div className="flex flex-col items-center gap-6 w-full">
             {navLinks.map((link) => (
-              <button key={link.id} onClick={() => handleNavClick(link.id as any)} className={`text-2xl font-black uppercase tracking-[0.25em] transition-all ${activeView === link.id ? (link.isSpecial ? 'text-cyan-600' : 'text-slate-900') : 'text-slate-400 hover:text-slate-900'}`}>{link.label}</button>
+              <button key={link.id} onClick={() => handleNavClick(link.id)} className={`text-2xl font-black uppercase tracking-[0.25em] transition-all ${activeView === link.id ? (link.isSpecial ? 'text-cyan-600' : 'text-slate-800') : 'text-slate-400 hover:text-slate-800'}`}>{link.label}</button>
             ))}
             {userName && (
                <button onClick={onSignOut} className="bg-slate-900 text-white px-10 py-4 rounded-2xl text-xl font-black uppercase tracking-widest mt-12 shadow-2xl">Sign Out</button>

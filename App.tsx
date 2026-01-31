@@ -10,7 +10,7 @@ import QA from './components/QA';
 import Admin from './components/Admin';
 import AIStudio from './components/AIStudio';
 import { Icons, SAMPLE_PHOTOS } from './constants';
-import { Photo, UserRole, AccessKey, UserSession, AboutContent, Inquiry } from './types';
+import { Photo, UserRole, AccessKey, UserSession, AboutContent, Inquiry, AppView } from './types';
 import { 
   loadPhotosFromDB, 
   savePhotosToDB, 
@@ -23,20 +23,18 @@ import {
   deleteInquiry
 } from './services/storageService';
 
-type View = 'hero' | 'gallery' | 'about' | 'contact' | 'store' | 'qa' | 'admin' | 'studio';
-
 export type ThemeType = 'white' | 'red' | 'yellow' | 'blue' | 'green' | 'orange' | 'black' | 'blend' | 'rainbow' | 'gold';
 
 const MASTER_KEY = "blair-studio-2026";
 const GLOBAL_THEME_KEY = "blair_global_atmosphere";
 
 const THEME_COLORS: Record<string, string> = {
-  white: '#f8fafc',
-  red: '#fee2e2',
-  yellow: '#fef9c3',
-  blue: '#dbeafe',
-  green: '#dcfce7',
-  orange: '#ffedd5',
+  white: '#fffdfa',
+  red: '#fff1f1',
+  yellow: '#fffbeb',
+  blue: '#f0f9ff',
+  green: '#f0fdf4',
+  orange: '#fffaf5',
   black: '#000000',
   rainbow: 'transparent',
   gold: 'transparent'
@@ -76,7 +74,7 @@ const DEFAULT_ABOUT: AboutContent = {
 };
 
 const App: React.FC = () => {
-  const [view, setView] = useState<View>('hero');
+  const [view, setView] = useState<AppView>('hero');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [accessKeys, setAccessKeys] = useState<AccessKey[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
@@ -90,8 +88,8 @@ const App: React.FC = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [loginInput, setLoginInput] = useState('');
   
-  const [currentTheme, setCurrentTheme] = useState<ThemeType>('blue');
-  const [blendColors, setBlendColors] = useState<string[]>(['red', 'yellow', 'blue']);
+  const [currentTheme, setCurrentTheme] = useState<ThemeType>('white');
+  const [blendColors, setBlendColors] = useState<string[]>(['blue', 'orange']);
   const [globalExpiry, setGlobalExpiry] = useState<number | null>(null);
 
   const [inquirySubject, setInquirySubject] = useState<string | null>(null);
@@ -99,9 +97,7 @@ const App: React.FC = () => {
   const currentTip = useMemo(() => {
     const roll = Math.random();
     if (roll < 0.225) return GOLD_TIP;
-    
-    const isAdminTipChance = Math.random() < 0.3;
-    const list = isAdminTipChance ? ADMIN_TIPS : TIPS;
+    const list = Math.random() < 0.3 ? ADMIN_TIPS : TIPS;
     return list[Math.floor(Math.random() * list.length)];
   }, [view]);
 
@@ -115,12 +111,7 @@ const App: React.FC = () => {
           loadInquiries()
         ]);
         
-        if (savedPhotos && savedPhotos.length > 0) {
-          setPhotos(savedPhotos);
-        } else {
-          setPhotos(SAMPLE_PHOTOS);
-        }
-        
+        setPhotos(savedPhotos && savedPhotos.length > 0 ? savedPhotos : SAMPLE_PHOTOS);
         setAccessKeys(savedKeys || []);
         setInquiries(savedInquiries || []);
         if (savedAbout) setAboutContent(savedAbout);
@@ -142,14 +133,13 @@ const App: React.FC = () => {
         if (globalAtm) {
           const { theme, expiry } = JSON.parse(globalAtm);
           if (Date.now() < expiry) {
-            // Respect white theme override if manually set
-            if (currentTheme !== theme && savedTheme !== 'white') setCurrentTheme(theme);
+            if (savedTheme !== 'white') setCurrentTheme(theme);
             setGlobalExpiry(expiry);
           }
         }
       } catch (err) {
         console.error("Initialization error:", err);
-        setError("Failed to initialize the studio. Please refresh the page.");
+        setError("Failed to initialize the studio.");
       } finally {
         setIsLoaded(true);
       }
@@ -163,14 +153,13 @@ const App: React.FC = () => {
       if (globalAtm) {
         const { theme, expiry } = JSON.parse(globalAtm);
         if (Date.now() < expiry) {
-          // Rule: If user manually chooses 'white', they can escape the event.
           const manualPreference = localStorage.getItem('blair_theme');
           if (currentTheme !== theme && manualPreference !== 'white') {
             setCurrentTheme(theme);
           }
           setGlobalExpiry(expiry);
         } else if (globalExpiry) {
-          const lastSaved = (localStorage.getItem('blair_theme') as ThemeType) || 'blue';
+          const lastSaved = (localStorage.getItem('blair_theme') as ThemeType) || 'white';
           setCurrentTheme(lastSaved);
           setGlobalExpiry(null);
           localStorage.removeItem(GLOBAL_THEME_KEY);
@@ -200,7 +189,6 @@ const App: React.FC = () => {
     }
     if (blendColors.length === 0) return { backgroundColor: THEME_COLORS.white };
     if (blendColors.length === 1) return { backgroundColor: THEME_COLORS[blendColors[0]] };
-    
     const stops = blendColors.map(c => THEME_COLORS[c]).join(', ');
     return { background: `linear-gradient(135deg, ${stops})` };
   }, [currentTheme, blendColors]);
@@ -208,59 +196,49 @@ const App: React.FC = () => {
   const handleSignIn = (e: React.FormEvent) => {
     e.preventDefault();
     if (!loginInput.trim()) return;
-
     if (loginInput === MASTER_KEY) {
-      const session: UserSession = { role: 'ADMIN', label: 'Owner' };
       setUserRole('ADMIN');
       setUserName('Owner');
-      sessionStorage.setItem('blair_session', JSON.stringify(session));
+      sessionStorage.setItem('blair_session', JSON.stringify({ role: 'ADMIN', label: 'Owner' }));
       setSuccess("Authenticated as Owner");
     } else {
-      const session: UserSession = { role: 'GUEST', label: loginInput };
       setUserRole('GUEST');
       setUserName(loginInput);
-      sessionStorage.setItem('blair_session', JSON.stringify(session));
+      sessionStorage.setItem('blair_session', JSON.stringify({ role: 'GUEST', label: loginInput }));
       setSuccess(`Welcome, ${loginInput}`);
     }
-
     setShowLoginModal(false);
     setLoginInput('');
   };
 
   const publishGlobalTheme = (theme: ThemeType) => {
-    // Atmosphere duration: 3 minutes (180,000ms)
     const expiry = Date.now() + 3 * 60 * 1000;
-    const payload = { theme, expiry };
-    localStorage.setItem(GLOBAL_THEME_KEY, JSON.stringify(payload));
-    
-    // Clear white override for owner so they see what they published
+    localStorage.setItem(GLOBAL_THEME_KEY, JSON.stringify({ theme, expiry }));
     localStorage.setItem('blair_theme', theme);
     setCurrentTheme(theme);
     setGlobalExpiry(expiry);
-    setSuccess(`GLOBAL EVENT: ${theme.toUpperCase()} ACTIVE FOR 3 MIN`);
+    setSuccess(`GLOBAL EVENT: ${theme.toUpperCase()} ACTIVE`);
   };
 
   const handleUpdateAbout = async (newContent: AboutContent) => {
     setAboutContent(newContent);
-    await saveAboutContent(newContent).catch(console.error);
-    setSuccess("Portfolio updated successfully.");
+    await saveAboutContent(newContent);
+    setSuccess("Portfolio updated.");
   };
 
   const handleUpdatePhoto = (updatedPhoto: Photo) => {
     setPhotos(prev => prev.map(p => p.id === updatedPhoto.id ? updatedPhoto : p));
-    setSuccess("Piece updated successfully.");
+    setSuccess("Piece updated.");
   };
 
   const handleSendInquiry = async (inquiry: Inquiry) => {
     await saveInquiry(inquiry);
-    const updated = await loadInquiries();
-    setInquiries(updated);
+    setInquiries(await loadInquiries());
   };
 
   const handleDeleteInquiry = async (id: string) => {
     await deleteInquiry(id);
-    const updated = await loadInquiries();
-    setInquiries(updated);
+    setInquiries(await loadInquiries());
     setSuccess("Inquiry archived.");
   };
 
@@ -269,34 +247,9 @@ const App: React.FC = () => {
     setView('contact');
   };
 
-  const handleThemeChange = (theme: ThemeType) => {
-    setCurrentTheme(theme);
-    localStorage.setItem('blair_theme', theme);
-  };
-
-  const toggleBlendColor = (color: string) => {
-    const newBlend = blendColors.includes(color)
-      ? blendColors.filter(c => c !== color)
-      : [...blendColors, color];
-    setBlendColors(newBlend);
-    localStorage.setItem('blair_blend_colors', JSON.stringify(newBlend));
-  };
-
   const renderContent = () => {
-    if (!isLoaded) return (
-      <div className="h-screen flex items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div>
-          <span className="font-black tracking-[0.3em] text-slate-400 uppercase text-xs">Entering Studio...</span>
-        </div>
-      </div>
-    );
-
-    if (error) return (
-      <div className="h-screen flex items-center justify-center text-red-500 font-black px-10 text-center bg-slate-50 uppercase tracking-widest text-xs">
-        {error}
-      </div>
-    );
+    if (!isLoaded) return <div className="h-screen flex items-center justify-center bg-[#fffdfa]"><div className="w-8 h-8 border-4 border-slate-900 border-t-transparent rounded-full animate-spin"></div></div>;
+    if (error) return <div className="h-screen flex items-center justify-center bg-[#fffdfa] uppercase font-black text-xs tracking-widest">{error}</div>;
 
     switch (view) {
       case 'hero': return <Hero onStart={() => setView('gallery')} />;
@@ -312,76 +265,39 @@ const App: React.FC = () => {
   };
 
   return (
-    <div 
-      className={`min-h-screen text-slate-900 transition-all duration-700 ease-in-out ${currentTheme === 'black' ? 'theme-black' : ''} ${currentTheme === 'rainbow' ? 'theme-rainbow' : ''} ${currentTheme === 'gold' ? 'theme-gold' : ''}`}
-      style={backgroundStyle}
-    >
+    <div className={`min-h-screen text-slate-800 transition-all duration-700 ease-in-out ${currentTheme === 'black' ? 'theme-black' : ''} ${currentTheme === 'rainbow' ? 'theme-rainbow' : ''} ${currentTheme === 'gold' ? 'theme-gold' : ''}`} style={backgroundStyle}>
       {view !== 'hero' && (
-        <Navbar 
-          onNavClick={setView as any} 
-          activeView={view} 
-          userRole={userRole} 
-          userName={userName} 
-          onSignOut={() => {setUserRole('GUEST'); setUserName(''); sessionStorage.removeItem('blair_session'); setSuccess("Signed Out");}} 
-          onSignInClick={() => setShowLoginModal(true)}
-          currentTheme={currentTheme}
-          onThemeChange={handleThemeChange}
-          blendColors={blendColors}
-          onToggleBlendColor={toggleBlendColor}
-          isGlobalEventActive={!!globalExpiry}
-        />
+        <Navbar onNavClick={setView} activeView={view} userRole={userRole} userName={userName} onSignOut={() => {setUserRole('GUEST'); setUserName(''); sessionStorage.removeItem('blair_session'); setSuccess("Signed Out");}} onSignInClick={() => setShowLoginModal(true)} currentTheme={currentTheme} onThemeChange={(t) => { setCurrentTheme(t); localStorage.setItem('blair_theme', t); }} blendColors={blendColors} onToggleBlendColor={(c) => { const n = blendColors.includes(c) ? blendColors.filter(x => x !== c) : [...blendColors, c]; setBlendColors(n); localStorage.setItem('blair_blend_colors', JSON.stringify(n)); }} isGlobalEventActive={!!globalExpiry} />
       )}
-      
-      {success && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500] bg-slate-900 text-white px-8 py-3 rounded-full font-black text-xs tracking-[0.2em] shadow-2xl animate-bounce">
-          {success}
-        </div>
-      )}
-
-      {/* Atmosphere Box: Always black bg, white text, locked at the top */}
+      {success && <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[500] bg-slate-900 text-white px-8 py-3 rounded-full font-black text-xs tracking-widest shadow-2xl animate-bounce">{success}</div>}
       {globalExpiry && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[90] bg-black border border-white/20 px-8 py-2.5 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-2xl backdrop-blur-md">
-           Atmosphere Countdown: {Math.max(0, Math.floor((globalExpiry - Date.now()) / 1000))}s
+           Event Countdown: {Math.max(0, Math.floor((globalExpiry - Date.now()) / 1000))}s
         </div>
       )}
-
       {showLoginModal && (
         <div className="fixed inset-0 z-[600] bg-slate-900/60 backdrop-blur-xl flex items-center justify-center p-6">
-          <div className="bg-white border border-slate-200 rounded-[2.5rem] w-full max-w-md p-10 relative text-center shadow-2xl">
+          <div className="bg-[#fffdfa] border border-slate-200 rounded-[2.5rem] w-full max-w-md p-10 relative text-center shadow-2xl">
             <button onClick={() => setShowLoginModal(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 transition-colors"><Icons.Close /></button>
             <h2 className="text-3xl font-black uppercase tracking-tighter mb-4 text-slate-900">Studio Entry</h2>
-            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-8">Access Secure Visual Data</p>
             <form onSubmit={handleSignIn} className="space-y-6">
-              <input 
-                type="text" 
-                placeholder="NAME OR ACCESS KEY" 
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-5 text-center text-xl font-mono focus:border-slate-900 outline-none text-slate-900 placeholder:text-slate-300 placeholder:font-sans" 
-                value={loginInput} 
-                onChange={e => setLoginInput(e.target.value)} 
-                autoFocus
-              />
-              <button className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl hover:bg-black transition-all uppercase tracking-widest shadow-lg">
-                Enter Studio
-              </button>
+              <input type="text" placeholder="NAME OR KEY" className="w-full bg-amber-50/50 border border-amber-100 rounded-2xl px-6 py-5 text-center text-xl font-mono focus:border-slate-900 outline-none text-slate-900" value={loginInput} onChange={e => setLoginInput(e.target.value)} autoFocus />
+              <button className="w-full bg-slate-900 text-white font-black py-5 rounded-2xl hover:bg-black transition-all uppercase tracking-widest shadow-lg">Enter Atelier</button>
             </form>
           </div>
         </div>
       )}
-
       <main className={view !== 'hero' ? 'pt-20' : ''}>{renderContent()}</main>
-
       {view !== 'hero' && (
-        <footer className="py-20 px-6 border-t border-slate-200 mt-20">
-          <div className="max-w-4xl mx-auto mb-16 p-10 bg-white border border-slate-100 rounded-[2.5rem] shadow-xl shadow-slate-200/50">
+        <footer className="py-20 px-6 border-t border-amber-100 mt-20">
+          <div className="max-w-4xl mx-auto mb-16 p-10 bg-white border border-amber-50 rounded-[2.5rem] shadow-xl shadow-slate-200/20">
              <div className="flex items-center gap-4 mb-5">
                 <div className="bg-slate-900 p-2.5 rounded-xl text-white"><Icons.Sparkles /></div>
                 <h4 className="text-[10px] uppercase font-black tracking-widest text-slate-400">Blair Insight</h4>
              </div>
              <p className="text-slate-700 font-bold italic text-lg leading-relaxed">"{currentTip}"</p>
           </div>
-          <div className="text-center">
-            <span className="text-slate-400 text-[10px] uppercase font-black tracking-[0.6em]">© 2024 BLAIR STUDIO | THE CRAFT OF LIGHT</span>
-          </div>
+          <div className="text-center"><span className="text-slate-400 text-[10px] uppercase font-black tracking-[0.6em]">© 2024 BLAIR STUDIO | THE CRAFT OF LIGHT</span></div>
         </footer>
       )}
     </div>

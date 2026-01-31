@@ -31,6 +31,8 @@ export enum Category {
 
 export type UserRole = 'ADMIN' | 'EDITOR' | 'GUEST';
 
+export type AppView = 'hero' | 'gallery' | 'about' | 'contact' | 'store' | 'qa' | 'admin' | 'studio';
+
 export interface AccessKey {
   id: string;
   label: string;
